@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="styles.css">
+        <!-- download Leaflet CSS and JS -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin=""/>
+        <title>FoodPrint</title>
+    </head>
+    <body>
+        <nav class="navbar">
+            <h1>
+                食途|FoodPrint
+            </h1>
+            <ul>
+                <li>
+                    <a href="index.html">
+                        Home
+                    </a>
+                </li>
+                <li>
+                    <a href="#database">
+                        DataBase
+                    </a>
+                </li>
+                <li>
+                    <a href="#databasemanager">
+                        DBM
+                    </a>
+                </li>
+                <li>
+                    <a href="#intructions">
+                        Instructions
+                    </a>
+                </li>
+                <li>
+                    <a href="#contact">
+                        Contact
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <main>
+            <div id="map">
+            </div>
+        </main>
+        <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin="">
+        </script>
+        <script>
+            map = L.map('map',{zoomControl:false}).setView([35.8617,104.1954],4);
+            L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=7&x={x}&y={y}&z={z}',{subdomains:['1','2','3','4'],maxZoom:18}).addTo(map);
+        </script>
+    </body>
+</html>
