@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>地图选点及搜索 - FoodPrint</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
+        #map-wrapper { position: relative; flex: 1; }
+        #info { padding: 10px; background: #ea945a; color: white; text-align: center; font-family: sans-serif; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        #map { width: 100%; height: 100%; }
+        .copy-btn { margin-left: 15px; padding: 5px 10px; cursor: pointer; background: white; border: none; border-radius: 4px; color: #ea945a; font-weight: bold; }
+        #coords { margin-right: 15px; }
+        
+        /* 搜索框样式 */
+        #search-container { position: absolute; z-index: 10000; top: 10px; left: 10px; }
+        #tipinput { width: 250px; padding: 10px; border: 2px solid #ddd; box-shadow: 0 2px 6px rgba(0,0,0,0.2); border-radius: 4px; font-size: 14px; outline: none; }
+        #tipinput:focus { border-color: #ea945a; box-shadow: 0 2px 8px rgba(234, 148, 90, 0.4); }
+        .leaflet-container { background: #f0f0f0; }
+        .amap-suggest-list { z-index: 10001 !important; }
+    </style>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=0c7874d496d9ba218153b11119ab1068&plugin=AMap.PlaceSearch,AMap.AutoComplete"></script>
+</head>
+<body>
+    <div id="info">
+        <span id="coords">尚未选择</span>
+        <button class="copy-btn" onclick="copyCoords()">复制并关闭</button>
+    </div>
+    <div id="map-wrapper">
+        <div id="search-container">
+            <input type="text" id="tipinput" placeholder="输入地址或地名搜索..." />
+        </div>
+        <div id="map"></div>
+    </div>
+    
+    <script>
+        const map = L.map('map').setView([39.9042, 116.4074], 11); // Default Beijing
+        L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=7&x={x}&y={y}&z={z}', {
+            subdomains: ['1', '2', '3', '4'],
+            maxZoom: 18
+        }).addTo(map);
+
+        let currentMarker = null;
+        const coordsSpan = document.getElementById('coords');
+        
+        // --- Core Functions ---
+        function setMarker(latlng, name = "所选位置") {
+            if (currentMarker) map.removeLayer(currentMarker);
+            currentMarker = L.marker(latlng).addTo(map).bindPopup(name).openPopup();
+            const lat = latlng.lat.toFixed(6);
+            const lng = latlng.lng.toFixed(6);
+            coordsSpan.innerText = `${lat}, ${lng}`;
+            
+            // Auto copy to clipboard logic
+            navigator.clipboard.writeText(`${lat}, ${lng}`).catch(err => {
+                console.error("Clipboard error", err);
+            });
+        }
+
+        map.on('click', function(e) {
+            setMarker(e.latlng, "地图点击位置");
+        });
+
+        function copyCoords() {
+            const text = coordsSpan.innerText;
+            if(text === "尚未选择") {
+                alert("请先点击地图选择一个位置或搜索！");
+                return;
+            }
+            // Fallback copy
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("Copy");
+            textArea.remove();
+            
+            alert("坐标 " + text + " 已复制！请回到Python程序粘贴。");
+            window.close(); // Attempt to close
+        }
+        
+        // --- Amap Search Integration ---
+        console.log("Page loaded, waiting for Amap...");
+        window.addEventListener('load', function() {
+            console.log("Window loaded, initializing search...");
+            if (window.AMap) {
+                AMap.plugin(['AMap.PlaceSearch', 'AMap.AutoComplete'], function(){
+                    console.log("Amap plugins loaded successfully");
+                    const tipInput = document.getElementById('tipinput');
+                    
+                    // Auto Complete
+                    const auto = new AMap.AutoComplete({
+                        input: "tipinput" 
+                    });
+
+                    // Place Search
+                    const placeSearch = new AMap.PlaceSearch({
+                        map: null, // Don't bind to AMap map instance
+                        pageSize: 5,
+                        pageIndex: 1,
+                    });
+                    
+                    console.log("AutoComplete initialized");
+                    
+                    // Function to handle search
+                    function performSearch(keyword) {
+                        if (!keyword || keyword.trim() === '') {
+                            console.log("Empty search keyword");
+                            return;
+                        }
+                        console.log("Performing search for:", keyword);
+                        placeSearch.search(keyword, function(status, result) {
+                            console.log("PlaceSearch status:", status, "result:", result);
+                            if (status === 'complete' && result && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
+                                const poi = result.poiList.pois[0];
+                                console.log("Found POI:", poi);
+                                const latlng = L.latLng(poi.location.lat, poi.location.lng);
+                                map.setView(latlng, 15);
+                                setMarker(latlng, poi.name);
+                            } else {
+                                console.log("PlaceSearch returned no results");
+                                alert("未找到该地点，请重试");
+                            }
+                        });
+                    }
+                    
+                    // Listen to Enter key
+                    tipInput.addEventListener('keypress', function(e) {
+                        console.log("Key pressed:", e.key);
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            performSearch(this.value);
+                        }
+                    });
+                    
+                    // Listen to selection event from AutoComplete (clicking on suggestion)
+                    AMap.Event.addListener(auto, "select", function(e){
+                        console.log("Search result selected from autocomplete:", e);
+                        if (e.poi && e.poi.location) {
+                            console.log("Using POI location");
+                            const latlng = L.latLng(e.poi.location.lat, e.poi.location.lng);
+                            map.setView(latlng, 15);
+                            setMarker(latlng, e.poi.name);
+                        } else if (e.item && e.item.location) {
+                            console.log("Using item location");
+                            // Fallback for non-POI search result
+                            const latlng = L.latLng(e.item.location.lat, e.item.location.lng);
+                            map.setView(latlng, 15);
+                            setMarker(latlng, e.item.name || e.item.value);
+                        } else if (e.item) {
+                            // If no location in autocomplete, use PlaceSearch to query the suggestion
+                            const searchText = e.item.name || e.item.value;
+                            console.log("Using PlaceSearch for:", searchText);
+                            performSearch(searchText);
+                        }
+                    });
+                });
+            } else {
+                console.error("AMap is not loaded!");
+            }
+        });
+    </script>
+</body>
+</html>
+    

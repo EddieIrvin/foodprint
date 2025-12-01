@@ -1,9 +1,20 @@
 [
     {
-        "name":"Test Location",
-        "latitude":37.7749,
-        "longitude":-122.4194,
-        "cuisine":"豆汁儿",
-        "reason":"balabalabala"
+        "id": "1",
+        "name": "示例餐厅: 局气",
+        "latitude": 39.9042,
+        "longitude": 116.4074,
+        "cuisine": "北京菜",
+        "reason": "烤鸭非常有特色，服务周到。",
+        "address": "北京市东城区"
+    },
+    {
+        "id": "2",
+        "name": "示例小吃: 锦芳小吃",
+        "latitude": 39.8856,
+        "longitude": 116.4163,
+        "cuisine": "豆汁儿",
+        "reason": "老北京的味道，豆汁儿焦圈绝配。",
+        "address": "北京市崇文门"
     }
 ]
