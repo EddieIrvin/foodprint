@@ -13,7 +13,7 @@ def create_map_picker_html():
     """Creates a temporary HTML file for picking coordinates using Leaflet + Amap Tiles, now with search."""
     
     # !!! 警告: 请将 '您自己的高德地图Key' 替换为您在高德开放平台申请的 Web 端 (JS API) Key !!!
-    AMAP_KEY = "0c7874d496d9ba218153b11119ab1068" 
+    AMAP_KEY = "" 
     
     html_content = f"""
 <!DOCTYPE html>
